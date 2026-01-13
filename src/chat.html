@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat - Crear Recordatorios</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background: #4285f4;
+      color: white;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header h1 { font-size: 20px; }
+    .back-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.3); }
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .message {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      word-wrap: break-word;
+    }
+    .message-user {
+      background: #4285f4;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .message-bot {
+      background: white;
+      color: #333;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .message-bot.error {
+      background: #fee;
+      color: #c00;
+    }
+    .input-container {
+      padding: 20px;
+      background: white;
+      border-top: 1px solid #ddd;
+      display: flex;
+      gap: 10px;
+    }
+    .input-container input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #ddd;
+      border-radius: 24px;
+      font-size: 16px;
+      outline: none;
+    }
+    .input-container input:focus {
+      border-color: #4285f4;
+    }
+    .input-container button {
+      background: #4285f4;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 24px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .input-container button:hover {
+      background: #357ae8;
+    }
+    .input-container button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .examples {
+      background: #fff3cd;
+      padding: 15px;
+      margin: 10px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    .examples strong { display: block; margin-bottom: 8px; }
+    .examples div { margin: 4px 0; color: #856404; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>💬 Crear Recordatorios</h1>
+    <a href="/" class="back-btn">← Volver</a>
+  </div>
+
+  <div class="examples">
+    <strong>💡 Ejemplos de lo que puedes escribir:</strong>
+    <div>• "Reunión con Juan mañana a las 3pm"</div>
+    <div>• "Recordar llamar a María el viernes a las 10am"</div>
+    <div>• "Cita médica hoy a las 5pm"</div>
+    <div>• "Junta de equipo el lunes a las 9am"</div>
+  </div>
+
+  <div class="chat-container" id="chatContainer">
+    <div class="message message-bot">
+      ¡Hola! 👋 Escribe un recordatorio y lo crearé automáticamente en tu calendario.
+    </div>
+  </div>
+
+  <div class="input-container">
+    <input type="text" id="messageInput" placeholder="Escribe tu recordatorio..." autofocus>
+    <button id="sendBtn" onclick="sendMessage()">Enviar</button>
+  </div>
+
+  <script>
+    const chatContainer = document.getElementById('chatContainer');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    async function sendMessage() {
+      const message = messageInput.value.trim();
+      if (!message) return;
+
+      // Agregar mensaje del usuario
+      addMessage(message, 'user');
+      messageInput.value = '';
+      sendBtn.disabled = true;
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          addMessage(data.message, 'bot');
+        } else {
+          addMessage(data.error || 'Hubo un error', 'bot error');
+        }
+      } catch (error) {
+        addMessage('Error de conexión', 'bot error');
+      } finally {
+        sendBtn.disabled = false;
+        messageInput.focus();
+      }
+    }
+
+    function addMessage(text, type) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message message-${type}`;
+      messageDiv.textContent = text;
+      chatContainer.appendChild(messageDiv);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+  </script>
+</body>
+</html>
