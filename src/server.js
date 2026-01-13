@@ -8,14 +8,20 @@ const { processMessage } = require('./chatProcessor');
 
 const app = express();
 
+// Configurar proxy de confianza para Render
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.use(session({
   secret: config.server.sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production', // HTTPS en producción
+    httpOnly: true, // Protección contra XSS
+    maxAge: 24 * 60 * 60 * 1000, // 24 horas
+    sameSite: 'lax', // Permite redirecciones desde OAuth
   },
 }));
 
@@ -138,10 +144,16 @@ app.get('/', (req, res) => {
 
 // Dashboard - new unified interface
 app.get('/dashboard', (req, res) => {
+  console.log(`📊 Dashboard: Verificando autenticación...`);
+  console.log(`   - isAuthenticated: ${req.session.isAuthenticated}`);
+  console.log(`   - userEmail: ${req.session.userEmail}`);
+  
   if (!req.session.isAuthenticated) {
+    console.log('❌ Dashboard: No autenticado, redirigiendo a /');
     return res.redirect('/');
   }
 
+  console.log(`✓ Dashboard: Mostrando dashboard para ${req.session.userName}`);
   res.sendFile(__dirname + '/dashboard.html');
 });
 
@@ -203,9 +215,15 @@ app.get('/auth/signin', async (req, res) => {
 app.get('/auth/callback', async (req, res) => {
   try {
     const code = req.query.code;
-    if (!code) return res.status(400).send('Código no recibido');
+    if (!code) {
+      console.error('❌ Callback: Código no recibido');
+      return res.status(400).send('Código no recibido');
+    }
 
+    console.log('🔑 Callback: Intercambiando código por tokens...');
     const tokens = await getTokenFromCode(code);
+    
+    console.log('👤 Callback: Obteniendo información del usuario...');
     const userInfo = await getUserInfo(tokens);
 
     req.session.tokens = tokens;
@@ -213,13 +231,22 @@ app.get('/auth/callback', async (req, res) => {
     req.session.userName = userInfo.name;
     req.session.isAuthenticated = true;
 
-    registerUser(userInfo.email, tokens, userInfo.email);
-    console.log(`✓ Usuario autenticado: ${userInfo.name}`);
+    // Guardar sesión explícitamente antes de redirigir
+    req.session.save((err) => {
+      if (err) {
+        console.error('❌ Error guardando sesión:', err);
+        return res.status(500).send('Error guardando sesión');
+      }
 
-    res.redirect('/dashboard');
+      registerUser(userInfo.email, tokens, userInfo.email);
+      console.log(`✓ Usuario autenticado: ${userInfo.name} (${userInfo.email})`);
+      console.log(`✓ Sesión guardada, redirigiendo a /dashboard`);
+
+      res.redirect('/dashboard');
+    });
   } catch (error) {
-    console.error('Error en callback:', error);
-    res.status(500).send('Error completando autenticación');
+    console.error('❌ Error en callback:', error);
+    res.status(500).send('Error completando autenticación: ' + error.message);
   }
 });
 
