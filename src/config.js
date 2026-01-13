@@ -1,4 +1,14 @@
-require('dotenv').config();
+// Cargar variables de entorno desde .env (solo en desarrollo)
+const dotenvResult = require('dotenv').config();
+
+if (dotenvResult.error && process.env.NODE_ENV !== 'production') {
+  console.warn('⚠️  No se encontró archivo .env (esto es normal en producción)');
+}
+
+console.log('🔍 Verificando variables de entorno...');
+console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'no definido'}`);
+console.log(`   GOOGLE_CLIENT_ID existe: ${!!process.env.GOOGLE_CLIENT_ID}`);
+console.log(`   GOOGLE_CLIENT_SECRET existe: ${!!process.env.GOOGLE_CLIENT_SECRET}`);
 
 // Validar variables de entorno requeridas
 const requiredEnvVars = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
