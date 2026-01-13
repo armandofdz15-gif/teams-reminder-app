@@ -1,0 +1,25 @@
+{
+  "name": "teams-reminder-app",
+  "version": "1.0.0",
+  "description": "Aplicación para recordatorios de eventos conectada a Microsoft Teams",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": ["microsoft-teams", "calendar", "reminders", "microsoft-graph"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@azure/msal-node": "^2.6.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.3.1",
+    "isomorphic-fetch": "^3.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
